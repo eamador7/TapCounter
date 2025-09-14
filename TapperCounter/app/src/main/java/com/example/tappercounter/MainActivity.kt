@@ -15,12 +15,18 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import com.example.tappercounter.databinding.ActivityMainBinding
 
+/**
+ * The main screen of the Tapper Counter application.
+ * Handles user taps to increment/decrement a counter and provides access to settings.
+ */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private var count = 0
     private lateinit var vibrator: Vibrator
     private lateinit var sharedPreferences: SharedPreferences
+
+    // Sound-related properties
     private lateinit var soundPool: SoundPool
     private var soundUpId: Int = 0
     private var soundDownId: Int = 0
@@ -31,19 +37,35 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Initialize core components
         vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         sharedPreferences = getSharedPreferences("TapperCounterPrefs", Context.MODE_PRIVATE)
 
+        // Setup audio playback
         setupSoundPool()
         loadSounds()
 
-        // Load the saved count
+        // Restore previous state
+        loadState()
+
+        // Setup listeners for all UI interactions
+        setupListeners()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Save the current count when the app is no longer visible
+        val editor = sharedPreferences.edit()
+        editor.putInt("currentCount", count)
+        editor.apply()
+    }
+
+    private fun loadState() {
         count = sharedPreferences.getInt("currentCount", 0)
-
-        // Set initial count text
         updateCounterText()
+    }
 
-        // Set up click listeners
+    private fun setupListeners() {
         binding.rightTapArea.setOnClickListener {
             count++
             updateCounterText()
@@ -75,28 +97,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onStop() {
-        super.onStop()
-        // Save the current count
-        val editor = sharedPreferences.edit()
-        editor.putInt("currentCount", count)
-        editor.apply()
-    }
-
     private fun setupSoundPool() {
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_GAME)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build()
         soundPool = SoundPool.Builder()
-            .setMaxStreams(3) // Increased for goal sound
+            .setMaxStreams(3)
             .setAudioAttributes(audioAttributes)
             .build()
     }
 
     private fun loadSounds() {
-        // These will cause an error until the files are added to res/raw
-        // See res/raw/README.md for instructions
+        // NOTE: This will cause a compile error until the sound files are added.
+        // See res/raw/README.md for instructions on how to add the required assets.
         soundUpId = soundPool.load(this, R.raw.tick_up, 1)
         soundDownId = soundPool.load(this, R.raw.tick_down, 1)
         soundGoalId = soundPool.load(this, R.raw.goal_reached, 1)
@@ -106,6 +120,10 @@ class MainActivity : AppCompatActivity() {
         binding.textViewCounter.text = count.toString()
     }
 
+    /**
+     * Triggers a short vibration.
+     * @param duration The duration of the vibration in milliseconds.
+     */
     private fun vibrate(duration: Long = 50) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
@@ -115,26 +133,37 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Plays a sound from the SoundPool, if sound effects are enabled in settings.
+     * @param soundId The ID of the sound to play.
+     */
     private fun playSound(soundId: Int) {
         if (sharedPreferences.getBoolean("soundEnabled", false)) {
             soundPool.play(soundId, 1f, 1f, 0, 0, 1f)
         }
     }
 
+    /**
+     * Checks if the current count has reached the user-defined target goal and triggers notifications if so.
+     * The goal-reached notifications are played in addition to the standard tap feedback.
+     */
     private fun checkGoalReached() {
         val goalEnabled = sharedPreferences.getBoolean("goalEnabled", false)
         if (goalEnabled) {
             val goalValue = sharedPreferences.getInt("goalValue", 0)
             if (count == goalValue) {
-                // Goal reached! Trigger special notifications.
-                playSound(soundGoalId) // Play goal sound in addition to tap sound
-                vibrate(200)       // Vibrate longer
+                playSound(soundGoalId)
+                vibrate(200) // Longer vibration for emphasis
                 flashGoalIndicator()
             }
         }
     }
 
+    /**
+     * Briefly flashes the background of the counter to indicate the goal has been met.
+     */
     private fun flashGoalIndicator() {
+        // For a more theme-friendly implementation, this color could be defined as a theme attribute.
         binding.textViewCounter.setBackgroundColor(Color.GREEN)
         Handler(Looper.getMainLooper()).postDelayed({
             binding.textViewCounter.setBackgroundColor(Color.TRANSPARENT)
