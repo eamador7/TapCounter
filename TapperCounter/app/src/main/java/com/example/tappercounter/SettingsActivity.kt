@@ -47,23 +47,31 @@ class SettingsActivity : AppCompatActivity() {
      * Sets up listeners for each UI control to save the setting value as soon as it changes.
      */
     private fun setupListeners() {
-        val editor = sharedPreferences.edit()
-
         binding.switchSound.setOnCheckedChangeListener { _, isChecked ->
-            editor.putBoolean("soundEnabled", isChecked).apply()
+            onSoundSwitchChanged(isChecked)
         }
 
         binding.switchGoal.setOnCheckedChangeListener { _, isChecked ->
-            editor.putBoolean("goalEnabled", isChecked).apply()
-            updateGoalVisibility(isChecked)
+            onGoalSwitchChanged(isChecked)
         }
 
-        // The goal value is saved on every text change for immediate effect.
-        // An alternative approach would be to save in onStop() or with a dedicated "Save" button.
         binding.editTextGoal.addTextChangedListener { text ->
-            val goalValue = text.toString().toIntOrNull() ?: 0
-            editor.putInt("goalValue", goalValue).apply()
+            onGoalTextChanged(text.toString())
         }
+    }
+
+    internal fun onSoundSwitchChanged(isChecked: Boolean) {
+        sharedPreferences.edit().putBoolean("soundEnabled", isChecked).apply()
+    }
+
+    internal fun onGoalSwitchChanged(isChecked: Boolean) {
+        sharedPreferences.edit().putBoolean("goalEnabled", isChecked).apply()
+        updateGoalVisibility(isChecked)
+    }
+
+    internal fun onGoalTextChanged(text: String) {
+        val goalValue = text.toIntOrNull() ?: 0
+        sharedPreferences.edit().putInt("goalValue", goalValue).apply()
     }
 
     /**
