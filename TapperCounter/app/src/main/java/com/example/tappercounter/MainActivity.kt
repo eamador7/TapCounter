@@ -3,11 +3,14 @@ package com.example.tappercounter
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.graphics.Color
 import android.media.AudioAttributes
 import android.media.SoundPool
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import com.example.tappercounter.databinding.ActivityMainBinding
@@ -21,6 +24,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var soundPool: SoundPool
     private var soundUpId: Int = 0
     private var soundDownId: Int = 0
+    private var soundGoalId: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,6 +49,7 @@ class MainActivity : AppCompatActivity() {
             updateCounterText()
             vibrate()
             playSound(soundUpId)
+            checkGoalReached()
         }
 
         binding.leftTapArea.setOnClickListener {
@@ -52,6 +57,7 @@ class MainActivity : AppCompatActivity() {
             updateCounterText()
             vibrate()
             playSound(soundDownId)
+            checkGoalReached()
         }
 
         binding.buttonReset.setOnClickListener {
@@ -83,7 +89,7 @@ class MainActivity : AppCompatActivity() {
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build()
         soundPool = SoundPool.Builder()
-            .setMaxStreams(2)
+            .setMaxStreams(3) // Increased for goal sound
             .setAudioAttributes(audioAttributes)
             .build()
     }
@@ -93,18 +99,19 @@ class MainActivity : AppCompatActivity() {
         // See res/raw/README.md for instructions
         soundUpId = soundPool.load(this, R.raw.tick_up, 1)
         soundDownId = soundPool.load(this, R.raw.tick_down, 1)
+        soundGoalId = soundPool.load(this, R.raw.goal_reached, 1)
     }
 
     private fun updateCounterText() {
         binding.textViewCounter.text = count.toString()
     }
 
-    private fun vibrate() {
+    private fun vibrate(duration: Long = 50) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+            vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
         } else {
             @Suppress("DEPRECATION")
-            vibrator.vibrate(50)
+            vibrator.vibrate(duration)
         }
     }
 
@@ -112,5 +119,25 @@ class MainActivity : AppCompatActivity() {
         if (sharedPreferences.getBoolean("soundEnabled", false)) {
             soundPool.play(soundId, 1f, 1f, 0, 0, 1f)
         }
+    }
+
+    private fun checkGoalReached() {
+        val goalEnabled = sharedPreferences.getBoolean("goalEnabled", false)
+        if (goalEnabled) {
+            val goalValue = sharedPreferences.getInt("goalValue", 0)
+            if (count == goalValue) {
+                // Goal reached! Trigger special notifications.
+                playSound(soundGoalId) // Play goal sound in addition to tap sound
+                vibrate(200)       // Vibrate longer
+                flashGoalIndicator()
+            }
+        }
+    }
+
+    private fun flashGoalIndicator() {
+        binding.textViewCounter.setBackgroundColor(Color.GREEN)
+        Handler(Looper.getMainLooper()).postDelayed({
+            binding.textViewCounter.setBackgroundColor(Color.TRANSPARENT)
+        }, 500)
     }
 }

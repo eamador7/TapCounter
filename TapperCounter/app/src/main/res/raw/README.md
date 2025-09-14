@@ -8,3 +8,7 @@ To enable sound effects in the app, please add the following two files to this d
 2.  `tick_down.mp3` (played when the counter is decremented)
 
 The sound files should be short, non-intrusive audio clips. The application logic in `MainActivity.kt` is already configured to load and play these files by these specific names.
+
+---
+
+3.  `goal_reached.mp3` (played when the count reaches the target goal)
