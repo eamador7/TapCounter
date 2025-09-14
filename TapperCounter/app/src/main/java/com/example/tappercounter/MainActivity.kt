@@ -67,24 +67,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupListeners() {
         binding.rightTapArea.setOnClickListener {
-            count++
-            updateCounterText()
-            vibrate()
-            playSound(soundUpId)
-            checkGoalReached()
+            handleIncrement()
         }
 
         binding.leftTapArea.setOnClickListener {
-            count--
-            updateCounterText()
-            vibrate()
-            playSound(soundDownId)
-            checkGoalReached()
+            handleDecrement()
         }
 
         binding.buttonReset.setOnClickListener {
-            count = 0
-            updateCounterText()
+            handleReset()
         }
 
         binding.buttonExit.setOnClickListener {
@@ -95,6 +86,27 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, SettingsActivity::class.java)
             startActivity(intent)
         }
+    }
+
+    internal fun handleIncrement() {
+        count++
+        updateCounterText()
+        vibrate()
+        playSound(soundUpId)
+        checkGoalReached()
+    }
+
+    internal fun handleDecrement() {
+        count--
+        updateCounterText()
+        vibrate()
+        playSound(soundDownId)
+        checkGoalReached()
+    }
+
+    internal fun handleReset() {
+        count = 0
+        updateCounterText()
     }
 
     private fun setupSoundPool() {
