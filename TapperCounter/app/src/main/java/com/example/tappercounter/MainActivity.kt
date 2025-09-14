@@ -1,6 +1,7 @@
 package com.example.tappercounter
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
@@ -50,6 +51,11 @@ class MainActivity : AppCompatActivity() {
 
         binding.buttonExit.setOnClickListener {
             finish()
+        }
+
+        binding.buttonSettings.setOnClickListener {
+            val intent = Intent(this, SettingsActivity::class.java)
+            startActivity(intent)
         }
     }
 
